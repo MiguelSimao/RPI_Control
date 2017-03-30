@@ -4,6 +4,7 @@
  
 import socket
 import sys
+import os
 import RPi.GPIO as GPIO
 
 from thread import *
@@ -23,12 +24,13 @@ PORT = 1080 # Arbitrary non-privileged portGPIO.setup(23, GPIO.IN
  
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print 'Socket created'
- 
+
 #Bind socket to local host and port
 try:
     s.bind((HOST, PORT))
 except socket.error as msg:
     print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+    GPIO.output(21,0)
     sys.exit()
      
 print 'Socket bind complete'
@@ -49,12 +51,16 @@ def clientthread(conn,gpio):
     conn.send('Welcome to the server. Type something and hit enter\n') #send only takes string
      
     #infinite loop so that function do not terminate and thread do not end.
-    while True:
+    while 1:
          
         #Receiving from client
-        data = conn.recv(1024)
+        try:
+            data = conn.recv(1024)
+        except:
+            if not data: break
+ 
         reply = 'OK...' + data
-        #print 'Message length: %i' % len(data)
+        #print 'Message length: %i' % len(GPIO.output(21,0)data)
         if not data: 
             break
         data = data[:-2]
@@ -64,8 +70,14 @@ def clientthread(conn,gpio):
         elif data=='O11':
             gpio.output(4,1)
             print ' pin 4 set high'
+        elif data=='shutdown':
+            print 'Shutting down system'
+            os.system('shutdown -h now')
+        elif data=='reboot':
+            print 'Rebooting system'
+            os.system('reboot')
         else:
-            print ' message not recognized'
+            print '?'
 
         conn.sendall(reply)
      
@@ -78,7 +90,12 @@ try:
     #now keep talking with the client
     while 1:
         #wait to accept a connection - blocking call
-        conn, addr = s.accept()
+        try:
+            conn, addr = s.accept()
+        except KeyboardInterrupt:
+            print 'Server stopped by user'
+            break
+        
         print 'Connected with ' + addr[0] + ':' + str(addr[1])
         #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
         start_new_thread(clientthread ,(conn,GPIO,))
