@@ -1,0 +1,322 @@
+\documentclass[twoside,a4paper]{refart}
+
+\usepackage{newunicodechar}
+
+\usepackage{makeidx}
+\usepackage{ifthen}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage[acronym,nomain,nonumberlist]{glossaries}
+
+\author{Miguel Sim\~ao (miguel.simao@uc.pt) \\
+		Collaborative Robotics Group \\
+		Department of Mechanical Engineering \\
+		University of Coimbra}
+\title{Reference Manual for the Control of Pneumatic Valve over a Local Network}
+\date{}
+\emergencystretch1em  %
+
+\pagestyle{myfootings}
+\markboth{Pneumatic valve control over network}%
+		 {Pneumatic valve control over network}
+
+\makeindex 
+
+%from glossaries package
+\makeglossaries
+\newacronym{gpio}{GPIO}{General Purpose Input/Output (Raspberry Pi)}
+\newacronym{rpi}{RPi}{Raspberry Pi}
+\newacronym{no}{NO}{Normally Open}
+\newacronym{nc}{NC}{Normally Closed}
+\newacronym{gnd}{GND}{Ground}
+
+
+\setcounter{tocdepth}{2}
+
+\begin{document}
+	
+\maketitle
+
+
+\begin{abstract}
+	Documentation for the setup that actuates the pneumatic valve at the base of the robot.
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+\glsaddall
+\printglossary[type=\acronymtype,title=Acronyms]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+\subsection{Usage}
+
+\section{Hardware}
+In this section we list the hardware used and how it is set up.
+
+\subsection{Material List}
+
+The hardware used is the following:
+\begin{enumerate}
+	
+\item
+Pneumatic valve with electric control
+\item
+24VDC power supply
+\item
+Relay board (breakout)
+\item
+5VDC regulated power supply
+A regular USB power supply of at least 2.5A suffices. 
+\item
+Raspberry Pi 2
+\item
+USB Wi-fi adapter
+\item
+1 Red LED
+\item
+1 100\Omega \ resistor
+\item
+2 Yellow LEDs
+\item
+2 1500\Omega \ resistors
+	
+\end{enumerate}
+
+\subsection{Actuation Subsystem}\label{sub:actuation_system}
+The actuation subsystem is composed by the commutation pneumatic valve. It interfaces with the control subsystem. It moves the valve between the following two positions:
+
+\begin{enumerate}
+	\item
+	\marginlabel{Ouputs:}
+	P2 -- Pneumatic output 2
+	\item
+	P4 -- Pneumatic output 4 
+\end{enumerate}
+
+It requires as input the 24 VDC signals and a GND connection (referenced to the input signals):
+\begin{enumerate}
+	\item
+	\marginlabel{Inputs:}
+	S1 -- 24V signal 1 (S1)
+	\item
+	S2 -- 24V signal 2 (S2)
+	\item
+	GND24 -- Ground
+\end{enumerate}
+The input signal S1 activates P2 and S2 activates P4.
+
+A real representation in shown in \cref{fig:ph_actuation}. In this figure, P1 is the pressured air input from its source, P3 and P5 are sinks, P12 and P14 are connected with P1 and assist the actuation of the valve.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{ph_actuation}
+	\caption{Actuation subsystem. Pneumatic valve with 3 positions and electrically-assisted control.}
+	\label{fig:ph_actuation}
+\end{figure}
+
+\subsection{Control Subsystem}
+The control subsystem is composed of the relay and interfaces with the communications subsystem and the actuation subsystem.
+
+\seealso{See \Cref{sub:actuation_system}} The actuation valve is normally centred and requires two 24V signals to commutate between P2 and P4 (see \cref{sub:actuation_system}). To provide those, we use a single relay (\cref{fig:relay_0}) to commutate a 24V source from a power supply, between the two signals S1 and S2. The control signal should be 5V but can be done with the 3.3V output level of the \gls{rpi}.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\linewidth]{relay_0}
+	\caption{Board with one relay. NC stands for normally closed and NO for normally open.}
+	\label{fig:relay_0}
+\end{figure}
+
+When the RPi digital output is high (3.3V), the relay connects (left side of the picture) the common line to the \gls{no} line. Otherwise, the \gls{nc} line is active.
+The 5V (DC) input may come from the \gls{rpi} 5V line and \gls{gnd} from the \gls{gnd} line on the \gls{rpi}'s \gls{gpio} pins.
+
+\begin{enumerate}
+	\item
+	\marginlabel{Outputs:}
+	S1 -- 24V signal 1 (S1)
+	\item
+	S2 -- 24V signal 2 (S2)
+\end{enumerate}
+
+\begin{enumerate}
+	\item
+	\marginlabel{Inputs:} S -- Control signal (3.3V)
+	\item PWR24 -- 24 VDC from source
+	\item PWR5 -- 5 VDC from source
+	\item GND5 -- Ground referenced to PWR5
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{ph_control}
+	\caption{Control subsystem. Single relay board with 24V rail on the left side and the control side on the right.}
+	\label{fig:ph_control}
+\end{figure}
+
+\subsection{Communications Subsystem}
+The communications subsystem is a Raspberry Pi with a socket server running that allows remote connections. It is composed by the \gls{rpi} (\cref{fig:ph_com}) and an USB Wi-fi adapter OR an Ethernet connection. Both interfaces can also be connected (Ethernet + Wi-fi). For reference, the \gls{gpio} pin layout is shown in \cref{fig:rpi2_gpio}.
+
+\seealso{See \Cref{fig:rpi2_gpio} to see GPIO header pin layout.}A real representation of the subsystem in shown in \cref{fig:ph_com}. Power to the \gls{rpi} is provided by the \mu USB input, but it is also possible to power it from a regulated\footnote{Careful! There's no circuit protection on the GPIO header, so if your supply peaks above 5V, you can fry your \gls{rpi}.} 5V power supply to pin 2. Regarding outputs, power and ground to the control subsystem are derived from the 5V output at pin 4 and 6. The control signal {\tt S} is provided by pin 7 (GPIO4). There's also a red indication LED connected to pins 26 (anode) and 25 (cathode).
+
+
+
+Input/output list:
+\begin{enumerate}
+	\item  \marginlabel{Ouputs:} S -- Control signal for the control subsystem
+	\item PWR5 -- 5VDC (limited amperage)
+	\item GND5
+\end{enumerate}
+\begin{enumerate}
+	\item  \marginlabel{Inputs:} Network (USB Wi-fi or Ethernet)
+	\item PWR5 -- 5VDC from source or USB
+	\item (Optional) GND5 -- Ground, if USB is NOT used
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{ph_com}
+	\caption{Real set-up of the communications subsystem.}
+	\label{fig:ph_com}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{rpi2_gpio}
+	\caption{Raspberry Pi 2/3 \gls{gpio} layout.}
+	\label{fig:rpi2_gpio}
+\end{figure}
+
+\subsection{Power Subsytem}
+There are two power rails in this system: 24 VDC and 5 VDC. There are separate power supplies for each, so the grounds are referenced individually. The 5 VDC supply is required for the Raspberry Pi and the control subsystem.
+\begin{enumerate}
+	\item  \marginlabel{Ouputs:} PWR24 -- 24 VDC source
+	\item GND24 -- Ground for 24 VDC devices
+	\item PWR5 -- 5 VDC source
+	\item GND5 -- Ground for 5 VDC devices
+\end{enumerate}
+\begin{enumerate}
+	\item  \marginlabel{Inputs:} Network (Wi-fi or Ethernet)
+	\item PWR5 -- 5VDC from USB or, optionally, source
+	\item (Optional) GND -- Ground, if USB is NOT used. 
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\linewidth]{ph_power24}
+	\caption{24 VDC power supply.}
+	\label{fig:ph_power24}
+\end{figure}
+
+\subsection{Display subsystem}
+This subsystem is responsible for giving feedback to the user about the status of important signals in the different subsystems. For now, the only indicators we use are LEDs, which are:
+\begin{enumerate}
+	\item Valve P2 status
+	\item Valve P4 status
+	\item RPi server status
+\end{enumerate}
+All of the LEDs are connected in a circuit that is simplified in \cref{fig:led_circuit}. One yellow LED connects S1 to GND and another connects S2 to GND (see \cref{fig:ph_actuation}). Since these poles have a voltage of 24V, the resistors were calculated to be of 1500\Omega.
+
+A red LED, is connected on the RPi's GPIO on the pin GPIO07 (3.3V, \cref{fig:rpi2_gpio}) with a 100\Omega\ resistor.
+
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.4\linewidth]{led_circuit}
+	\caption{Simplified circuit diagram used to power an LED.}
+	\label{fig:led_circuit}
+\end{figure}
+
+
+\subsection{Full Setup}
+Schematically, the whole system is represented in \cref{fig:subsystem_full}.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{subsystems_0}
+	\caption{Subsystems' interactions.}
+	\label{fig:subsystem_full}
+\end{figure}
+
+
+
+\section{Software}
+\subsection{Operating System and Remote Access}
+\marginlabel{OS Configuration}The Raspberry Pi is running a light version of Raspbian, Raspbian Jessie Lite\footnotemark. This image does not have desktop environment, so all the configuration has to be done over a terminal. Configuration steps:
+\footnote{https://www.raspberrypi.org/downloads/raspbian/}
+\begin{enumerate}
+	\item Install OS image on the RPi's SD card
+	\item Connect a keyboard, Wi-fi adapter and screen to the RPi
+	\item Log into the OS with root user (pi)
+	
+	User name: \emph{pi}
+	
+	Password: \emph{raspberry}
+	\item Run {\tt sudo raspi-config}
+	
+	Change the keyboard layout to \emph{Portuguese} (all default) 
+	
+	Enable SSH
+	\item Set network settings, both for wi-fi and Ethernet
+	\item Install {\tt git}:
+	
+	\begin{verbatim}sudo apt-get update
+	sudo apt-get install git
+	\end{verbatim}
+	
+\end{enumerate}
+At this point, the RPi is ready to run Python 2 code. All the following configuration can be done remotely.
+
+We can access the RPi mainframe from another computer -- preferably Linux or Windows with Putty -- over the SSH protocol using the command:
+
+\begin{verbatim}
+	ssh pi@RPI_IP_ADDRESS -p RPI_SSH_PORT
+\end{verbatim}
+\seealso{See \cref{sub:network_conf}}where {\tt RPI\_PI\_ADDRESS} is the IP address of the RPi and {\tt RPI\_SSH\_PORT} is the SSH port allocated to the RPi (default: 20). There should be a SSH port for each of the devices in the local network, see \cref{sub:network_conf}.
+
+If the SSH connection was successful, you can manage the Pi. The first step is creating a known directory where to put the code into. Use the following code:
+
+\begin{verbatim}
+	mkdir /python/socket_server
+\end{verbatim}
+where you should replace {\tt socket\_server} by another name, if your following this documentation for another purpose.
+
+\subsubsection{Uploading or updating the code on the Pi}
+On the Pi, Python code is saved below the folder {\tt python} on the home directory:
+\begin{verbatim} ~/python \end{verbatim}
+With individual code packages on the directories below:
+\begin{verbatim}
+~/python/socket_server
+~/python/code_package_1
+~/python/code_package_2
+~/python/code_package_3
+~/python/...
+\end{verbatim}
+
+\marginlabel{Copying files remotely} It is possible to copy the code remotely with the {\tt scp} command. From your origin computer, run in one line:
+\begin{verbatim}
+	scp -P RPI_SSH_PORT pi@RPI_IP_ADDRESS:~/python/code_package_x/FILE.py
+	/your/local/directory/FILE.py
+\end{verbatim}
+which copies the {\tt FILE.py} to the specified{\tt ~/python/code\_package\_x directory}.  If there's already a file there with the same name, it will be \attention overwritten without warning.
+
+Alternatively, you can download code from a git repository\footnotemark. You just need to go to the target directory, e.g.:
+\begin{verbatim} cd ~/python/socket_server
+\end{verbatim}
+and close the repository:
+\begin{verbatim} cd ~/python/socket_server
+\end{verbatim}
+
+\footnotetext{The author's git repository (master branch) can be found on: \\ https://github.com/MiguelSimao/RPI\_Control.git}
+
+\subsection{Socket Server}
+\subsection{Network Configuration}\label{sub:network_conf}
+
+
+\end{document}
