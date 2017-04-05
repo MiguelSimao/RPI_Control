@@ -1,6 +1,6 @@
 \documentclass[twoside,a4paper]{refart}
 
-\usepackage{newunicodechar}
+\usepackage{newunicodechar} %greek letters
 
 \usepackage{makeidx}
 \usepackage{ifthen}
@@ -65,9 +65,9 @@ The RPi server accepts several connections over the TCP/IP protocol, for which y
 \begin{verbatim} 192.168.1.199 \end{verbatim}
 This IP should be valid forever. The port used is 1080. If you're trying to connect from a computer in the lab's wired network, the temporary IP address you should use is (Ethernet):
 \begin{verbatim} 172.16.22.197 \end{verbatim}
-at the same port. This is the IP of the  router and it will redirect the connection to the target RPi only if you use this port. Otherwise, you have to change some network configurations.\seealso{See \Cref{sub:network_conf}}.
+at the same port. This is the IP of the router in the department's network and it will redirect the connection to the target RPi only if you use port 1080. Otherwise, you have to change some network configurations.\seealso{See \Cref{sub:network_conf}}. \attention For now, the IP address of the router is dynamic, but it will be given a static IP to be defined in the close future.
 
-\attention For now, the IP address of the router is dynamic, but it will be given a static IP to be defined in the close future.
+You also have the option to connect directly from the Ethernet port. For this end, the IP address is 172.31.1.1 and the port is the same (1080). This is useful if you're trying to connect from the robot's local network (172.31.x.x).
 
 You can turn on the RPi just by powering it with a \mu USB cable. The server is running when the large red LED is bright. The following commands are available:
 \begin{enumerate}
@@ -101,9 +101,9 @@ t.Terminator = 'CR/LF';
 % Open connection:
 fopen(t)
 % Send command (unlock):
-fprintf(t,'S11');
+fprintf(t,'O11');
 % Send command (lock):
-fprintf(t,'S10');
+fprintf(t,'O10');
 % Close connection:
 fclose(t)
 \end{verbatim}
